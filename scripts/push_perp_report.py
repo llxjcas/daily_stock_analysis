@@ -68,11 +68,21 @@ payload = json.dumps({
 }).encode()
 
 ctx = ssl.create_default_context()
+
+# 走代理
+proxy = os.getenv('HTTPS_PROXY') or os.getenv('https_proxy') or os.getenv('HTTP_PROXY') or os.getenv('http_proxy') or ''
+if proxy:
+    https_handler = urllib.request.HTTPSHandler(context=ctx)
+    proxy_handler = urllib.request.ProxyHandler({'https': proxy, 'http': proxy})
+    opener = urllib.request.build_opener(proxy_handler, https_handler)
+else:
+    opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
+
 req = urllib.request.Request(
     'https://www.pushplus.plus/send',
     data=payload,
     headers={'Content-Type': 'application/json'}
 )
-resp = urllib.request.urlopen(req, timeout=15, context=ctx)
+resp = opener.open(req, timeout=15)
 result = json.loads(resp.read().decode())
 print('Push result: {}'.format(result))
